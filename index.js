@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 //mongodb
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId, MongoCryptKMSRequestNetworkTimeoutError } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.t1ods8h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -40,7 +40,7 @@ async function run() {
 
         //middleware 
         const verifyToken = (req, res, next) => {
-            console.log('inside verifyToken ', req.headers.authorization);
+            // console.log('inside verifyToken ', req.headers.authorization);
             if (!req.headers.authorization) {
                 return res.status(401).send({ message: 'unauthorize access' })
             }
@@ -129,6 +129,19 @@ async function run() {
         //news api
         app.get("/news", async (req, res) => {
             const result = await newsCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post("/news", verifyToken, verifyAdmin, async(req, res)=>{
+            const item = req.body;
+            const result = await newsCollection.insertOne(item);
+            res.send(result);
+        })
+
+        app.delete('/news/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await newsCollection.deleteOne(query);
             res.send(result);
         })
 
